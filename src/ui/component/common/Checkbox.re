@@ -1,8 +1,7 @@
 [@react.component]
 let make =
     (
-      ~type_="text",
-      ~value,
+      ~value: bool,
       ~onChange,
       ~disabled: option(bool)=?,
       ~label: option(React.element)=?,
@@ -16,8 +15,8 @@ let make =
        }}
       <input
         className={className ++ " text-black w-full"}
-        type_
-        value
+        type_="checkbox"
+        checked={value}
         onChange
         disabled={
           switch (disabled) {
@@ -27,6 +26,4 @@ let make =
         }
       />
     </label>;
-    // className={btnSize ++ " border border-gray-600 bg-gray-800 hover:bg-gray-700"}
-    // onClick={onClick}
 };

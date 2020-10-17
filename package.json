@@ -20,6 +20,9 @@
   "bugs": {
     "url": "https://github.com/ArekRado/reshape-devtools/issues"
   },
+  "engines": {
+    "node": "10.22.1"
+  },
   "homepage": "https://github.com/ArekRado/reshape-devtools#readme",
   "dependencies": {
     "@babel/core": "^7.10.4",

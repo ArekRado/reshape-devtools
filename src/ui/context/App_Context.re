@@ -46,6 +46,11 @@ type action =
       string,
       int,
       Type.keyframe,
+    )
+  | SetAnimation(
+      Type.entity,
+      string,
+      Type.animation,
     );
 // | SetTransformParent(Type.entity, Type.entity)
 
@@ -174,6 +179,13 @@ let reducer = (state, action): Type.state => {
         ~entity,
         ~index,
         ~keyframe,
+        ~state,
+      )
+    | SetAnimation(entity, name, animation) =>
+      Animation_Component.set(
+        ~name,
+        ~entity,
+        ~animation,
         ~state,
       )
     // | SetTransformParent(entity, parentEntity) => Transform_Component(~entity, ~state, ~rotation);

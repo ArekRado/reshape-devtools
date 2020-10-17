@@ -104,33 +104,6 @@ let mapComponentToText = (component: Type.animatedComponent): string =>
   | TransformLocalPosition(_) => "TransformLocalPosition"
   };
 
-let setAnimationComponent =
-    (
-      ~selectedEntity,
-      ~appDispatch,
-      ~component,
-      ~componentEntity,
-      ~animationName,
-    ) => {
-  let animatedComponent =
-    switch (component) {
-    | Type.FieldFloat(_, name) => Type.FieldFloat(componentEntity, name)
-    | Type.FieldVector(_, name) => Type.FieldVector(componentEntity, name)
-    | Type.TransformLocalPosition(_) =>
-      Type.TransformLocalPosition(componentEntity)
-    };
-
-  appDispatch(
-    App_Context.SetAnimationComponent(
-      selectedEntity,
-      animationName,
-      animatedComponent,
-    ),
-  );
-
-  ();
-};
-
 let msToTime = ms => {
   let seconds = mod_float(ms /. 1000.0, 60.0);
   let minutes = mod_float(ms /. (1000.0 *. 60.0), 60.0);
@@ -173,16 +146,85 @@ let make = (~name: Type.entity) => {
       let selectedKeyframe =
         Belt.List.get(animation.keyframes, keyframeIndex);
 
+      let setAnimationDuration = (event, keyframe: Reshape.Type.keyframe) =>
+        appDispatch(
+          App_Context.SetAnimationKeyframe(
+            editorState.selectedEntity,
+            name,
+            keyframeIndex,
+            {...keyframe, duration: ReactEvent.Form.target(event)##value},
+          ),
+        );
+
+      let setIsPlaying = isPlaying =>
+        appDispatch(
+          App_Context.SetAnimation(
+            editorState.selectedEntity,
+            name,
+            {...animation, isPlaying},
+          ),
+        );
+
+      let setCurrentTime = event =>
+        appDispatch(
+          App_Context.SetAnimation(
+            editorState.selectedEntity,
+            name,
+            {...animation, currentTime: ReactEvent.Form.target(event)##value},
+          ),
+        );
+
+      let addKeyframe = () => {
+        appDispatch(
+          App_Context.SetAnimationKeyframes(
+            editorState.selectedEntity,
+            name,
+            Belt.List.add(
+              animation.keyframes,
+              Animation_Component.emptyKeyframe(10.0),
+            ),
+          ),
+        );
+
+        setKeyframeIndex(_ => Belt.List.length(animation.keyframes));
+      };
+
+      let setAnimationComponent =
+          (~component, ~componentEntity, ~animationName) => {
+        let animatedComponent =
+          switch (component) {
+          | Type.FieldFloat(_, name) =>
+            Type.FieldFloat(componentEntity, name)
+          | Type.FieldVector(_, name) =>
+            Type.FieldVector(componentEntity, name)
+          | Type.TransformLocalPosition(_) =>
+            Type.TransformLocalPosition(componentEntity)
+          };
+
+        appDispatch(
+          App_Context.SetAnimationComponent(
+            editorState.selectedEntity,
+            animationName,
+            animatedComponent,
+          ),
+        );
+
+        ();
+      };
+
       <>
         <div className="grid grid-cols-12 gap-1 my-1">
           <div className="col-span-6 grid grid-cols-12 gap-1">
             <div className="col-span-4"> {React.string("name")} </div>
             <div className="col-span-8">
-              <Input value=name onChange={_ => {()}} />
+              <Input value=name onChange={_ => {()}} disabled=true />
             </div>
             <div className="col-span-4"> {React.string("isPlaying")} </div>
             <div className="col-span-8">
-              {React.string(animation.isPlaying ? "true" : "false")}
+              <Checkbox
+                value={animation.isPlaying}
+                onChange={_ => {setIsPlaying(!animation.isPlaying)}}
+              />
             </div>
             <div className="col-span-4"> {React.string("currentTime")} </div>
             <div className="col-span-8">
@@ -200,11 +242,9 @@ let make = (~name: Type.entity) => {
                 value={mapComponentToText(animation.component)}
                 onChange={component =>
                   setAnimationComponent(
-                    ~appDispatch,
                     ~component=mapTextToComponent(component),
                     ~componentEntity="",
                     ~animationName=name,
-                    ~selectedEntity=editorState.selectedEntity,
                   )
                 }
               />
@@ -216,11 +256,9 @@ let make = (~name: Type.entity) => {
                 value={getComponentEntity(animation.component)}
                 onChange={componentEntity =>
                   setAnimationComponent(
-                    ~appDispatch,
                     ~component=animation.component,
                     ~componentEntity,
                     ~animationName=name,
-                    ~selectedEntity=editorState.selectedEntity,
                   )
                 }
               />
@@ -235,22 +273,7 @@ let make = (~name: Type.entity) => {
             </div>
           </div>
           <div className="col-span-6 grid grid-cols-12 gap-1 my-1">
-            <Button
-              className="col-span-4"
-              onClick={_ => {
-                appDispatch(
-                  App_Context.SetAnimationKeyframes(
-                    editorState.selectedEntity,
-                    name,
-                    Belt.List.add(
-                      animation.keyframes,
-                      Animation_Component.emptyKeyframe(10.0),
-                    ),
-                  ),
-                );
-
-                setKeyframeIndex(_ => Belt.List.length(animation.keyframes));
-              }}>
+            <Button className="col-span-4" onClick={_ => {addKeyframe()}}>
               {React.string("Add keyframe")}
             </Button>
             {switch (selectedKeyframe) {
@@ -264,17 +287,7 @@ let make = (~name: Type.entity) => {
                    <Input
                      value={Belt.Float.toString(keyframe.duration)}
                      onChange={event => {
-                      appDispatch(
-                        App_Context.SetAnimationKeyframe(
-                          editorState.selectedEntity,
-                          name,
-                          keyframeIndex,
-                          {
-                            ...keyframe,
-                            duration: ReactEvent.Form.target(event)##value
-                          }
-                        ),
-                      );
+                       setAnimationDuration(event, keyframe)
                      }}
                    />
                  </div>
@@ -287,8 +300,7 @@ let make = (~name: Type.entity) => {
                  </div>
                  <div className="col-span-8">
                    {switch (keyframe.valueRange) {
-                    | Float(value) =>
-                      <Vector value onChange={_ => {()}} />
+                    | Float(value) => <Vector value onChange={_ => {()}} />
                     | Vector(_) => React.string("Vector")
                     }}
                  </div>
@@ -310,12 +322,7 @@ let make = (~name: Type.entity) => {
                    ),
                  (),
                )}
-               onClick={_ => {
-                setKeyframeIndex(_ => index);
-                Js.log("test");
-
-
-               }}>
+               onClick={_ => {setKeyframeIndex(_ => index)}}>
                {switch (keyframe.valueRange) {
                 | Float((from, to_)) =>
                   <>

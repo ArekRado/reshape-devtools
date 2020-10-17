@@ -2,7 +2,7 @@ const path = require('path')
 const HtmlWebPackPlugin = require('html-webpack-plugin')
 
 module.exports = {
-  entry: './src/system/system.bs.js',
+  entry: './src/index.bs.js',
   output: {
     filename: '[name].js',
     path: path.resolve(__dirname, 'dist'),
