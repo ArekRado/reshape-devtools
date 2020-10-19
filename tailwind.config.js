@@ -7,6 +7,11 @@ module.exports = {
     top: {
       '1/2': '50%',
     },
+    extend: {
+      outline: {
+        lightblue: '2px solid #BEE3F8',
+      }
+    }
   },
   variants: {},
   plugins: [],

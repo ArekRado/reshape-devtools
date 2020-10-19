@@ -19,7 +19,7 @@ let make = (~onClick, ~children, ~size=Xs, ~className="") => {
     onClick
     className={
       btnSize
-      ++ " border border-gray-600 bg-gray-800 hover:bg-gray-700"
+      ++ " border border-gray-600 bg-gray-800 hover:bg-gray-700 focus:outline-lightblue"
       ++ " "
       ++ className
     }>

@@ -6,13 +6,28 @@ type selectOption = {
 
 [@react.component]
 let make =
-    (~options: Belt.List.t(selectOption), ~value, ~onChange, ~label="") => {
-  <label>
-    <div> {React.string(label)} </div>
+    (
+      ~options: Belt.List.t(selectOption), 
+      ~value, 
+      ~onChange, 
+      ~label: option(React.element)=?,
+      ~containerClassName="",
+      ~labelClassName="",
+      ~inputClassName="",
+      ~id="",
+    ) => {
+  <div className={containerClassName}>
+    {switch (label) {
+    | Some(label) => <label htmlFor={id} className={labelClassName}>{label}</label>
+    | None => React.null
+    }}
+    
     <select
-      className="text-black w-full"
+      className={"text-black w-full focus:outline-lightblue " ++ inputClassName}
       onChange={event => onChange(ReactEvent.Form.target(event)##value)}
-      value>
+      value
+      id
+    >
       <option />
       {Belt.List.mapWithIndex(options, (index, option) =>
          <option
@@ -25,5 +40,5 @@ let make =
        ->Array.of_list
        ->React.array}
     </select>
-  </label>;
+  </div>;
 };

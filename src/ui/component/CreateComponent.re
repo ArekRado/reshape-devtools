@@ -35,7 +35,7 @@ let make = () => {
   let (_, appDispatch) = React.useContext(App_Context.context);
 
   <Select
-    label="Add component"
+    label={React.string("Add component")}
     options
     value=""
     onChange={value =>

@@ -36,6 +36,11 @@ let componentList: Belt.List.t(Select.selectOption) = [
   },
 ];
 
+let parseFloat = s => switch (Belt.Float.fromString(s)) {
+| Some(value) => value
+| None => 0.0
+};
+
 let componentEntitiesList =
     (appState: Type.state, component: Type.animatedComponent)
     : Belt.List.t(Select.selectOption) => {
@@ -146,13 +151,23 @@ let make = (~name: Type.entity) => {
       let selectedKeyframe =
         Belt.List.get(animation.keyframes, keyframeIndex);
 
-      let setAnimationDuration = (event, keyframe: Reshape.Type.keyframe) =>
+      let setKeyframeDuration = (keyframe: Reshape.Type.keyframe, event) =>
         appDispatch(
           App_Context.SetAnimationKeyframe(
             editorState.selectedEntity,
             name,
             keyframeIndex,
-            {...keyframe, duration: ReactEvent.Form.target(event)##value},
+            {...keyframe, duration: parseFloat(ReactEvent.Form.target(event)##value)},
+          ),
+        );
+
+      let setKeyframeValueRange = (keyframe, valueRange) =>
+        appDispatch(
+          App_Context.SetAnimationKeyframe(
+            editorState.selectedEntity,
+            name,
+            keyframeIndex,
+            {...keyframe, valueRange},
           ),
         );
 
@@ -170,7 +185,7 @@ let make = (~name: Type.entity) => {
           App_Context.SetAnimation(
             editorState.selectedEntity,
             name,
-            {...animation, currentTime: ReactEvent.Form.target(event)##value},
+            {...animation, currentTime: parseFloat(ReactEvent.Form.target(event)##value)},
           ),
         );
 
@@ -188,7 +203,7 @@ let make = (~name: Type.entity) => {
 
         setKeyframeIndex(_ => Belt.List.length(animation.keyframes));
       };
-
+      
       let setAnimationComponent =
           (~component, ~componentEntity, ~animationName) => {
         let animatedComponent =
@@ -215,29 +230,40 @@ let make = (~name: Type.entity) => {
       <>
         <div className="grid grid-cols-12 gap-1 my-1">
           <div className="col-span-6 grid grid-cols-12 gap-1">
-            <div className="col-span-4"> {React.string("name")} </div>
-            <div className="col-span-8">
-              <Input value=name onChange={_ => {()}} disabled=true />
-            </div>
-            <div className="col-span-4"> {React.string("isPlaying")} </div>
-            <div className="col-span-8">
-              <Checkbox
-                value={animation.isPlaying}
-                onChange={_ => {setIsPlaying(!animation.isPlaying)}}
-              />
-            </div>
-            <div className="col-span-4"> {React.string("currentTime")} </div>
-            <div className="col-span-8">
-              <Input
-                type_="number"
-                value={Belt.Float.toString(animation.currentTime)}
-                onChange={_ => {()}}
-              />
-            </div>
+            <Input 
+              containerClassName="col-span-12 grid grid-cols-12"
+              labelClassName="col-span-4"
+              inputClassName="col-span-8"
+              label={React.string("name")}
+              value=name 
+              onChange={_ => {()}} 
+              disabled=true 
+            />
+
+            <Checkbox 
+              containerClassName="col-span-12 grid grid-cols-12"
+              labelClassName="col-span-4"
+              inputClassName="col-span-8"
+              label={React.string("isPlaying")}
+              value={animation.isPlaying}
+              onChange={_ => {setIsPlaying(!animation.isPlaying)}}
+            />
+
+            <Input 
+              containerClassName="col-span-12 grid grid-cols-12"
+              labelClassName="col-span-4"
+              inputClassName="col-span-8"
+              label={React.string("currentTime")}
+              type_="number"
+              value={Belt.Float.toString(animation.currentTime)}
+              onChange={setCurrentTime}
+              max={Belt.Float.toString(animationLength)}
+              min="0"
+            />
+
             <div className="col-span-4"> {React.string("component")} </div>
             <div className="col-span-4">
               <Select
-                label=""
                 options=componentList
                 value={mapComponentToText(animation.component)}
                 onChange={component =>
@@ -251,7 +277,6 @@ let make = (~name: Type.entity) => {
             </div>
             <div className="col-span-4">
               <Select
-                label=""
                 options={componentEntitiesList(appState, animation.component)}
                 value={getComponentEntity(animation.component)}
                 onChange={componentEntity =>
@@ -263,32 +288,32 @@ let make = (~name: Type.entity) => {
                 }
               />
             </div>
+
             <div className="col-span-4"> {React.string("isFinished")} </div>
             <div className="col-span-8">
               {React.string(animation.isFinished ? "true" : "false")}
             </div>
+
             <div className="col-span-4"> {React.string("wrapMode")} </div>
             <div className="col-span-8">
               {React.string(wrapModeToString(animation.wrapMode))}
             </div>
           </div>
           <div className="col-span-6 grid grid-cols-12 gap-1 my-1">
-            <Button className="col-span-4" onClick={_ => {addKeyframe()}}>
+            <Button className="col-span-12" onClick={_ => {addKeyframe()}}>
               {React.string("Add keyframe")}
             </Button>
             {switch (selectedKeyframe) {
              | None => React.null
              | Some(keyframe) =>
-               <div className="col-span-6 grid grid-cols-12 gap-1">
+                <>
                  <div className="col-span-4">
                    {React.string("duration")}
                  </div>
                  <div className="col-span-8">
                    <Input
                      value={Belt.Float.toString(keyframe.duration)}
-                     onChange={event => {
-                       setAnimationDuration(event, keyframe)
-                     }}
+                     onChange={setKeyframeDuration(keyframe)}
                    />
                  </div>
                  <div className="col-span-4">
@@ -300,21 +325,38 @@ let make = (~name: Type.entity) => {
                  </div>
                  <div className="col-span-8">
                    {switch (keyframe.valueRange) {
-                    | Float(value) => <Vector value onChange={_ => {()}} />
-                    | Vector(_) => React.string("Vector")
+                    | Float(value) => 
+                      <Vector 
+                        value 
+                        onChange={value => {setKeyframeValueRange(keyframe, Float(value))}} 
+                      />
+                    | Vector((v1, v2)) => 
+                      <>
+                        <Vector 
+                          value={v1} onChange={value => {
+                          setKeyframeValueRange(keyframe, Vector((value, v2)));
+                        }} />
+                        <Vector 
+                          value={v2} onChange={value => {
+                          setKeyframeValueRange(keyframe, Vector((v1, value)));
+                        }} />
+                      </>
                     }}
                  </div>
-               </div>
+               </>
              }}
           </div>
         </div>
         <div
-          className="flex border-solid border border-black h-20 bg-gray-700 bg-opacity-75 relative overflow-hidden">
+          className="flex h-20 bg-gray-700 bg-opacity-75 relative overflow-hidden">
           {Belt.List.mapWithIndex(
              animation.keyframes, (index, keyframe: Type.keyframe) =>
              <button
                key={Belt.Int.toString(index)}
-               className="flex flex-wrap items-center justify-center border-r border-black overflow-hidden"
+               className={
+                 (index === keyframeIndex ? "border-white" : "border-black") 
+                 ++ " flex flex-wrap items-center justify-center border overflow-hidden"
+                }
                style={ReactDOMRe.Style.make(
                  ~flex=
                    Belt.Float.toString(
@@ -322,7 +364,8 @@ let make = (~name: Type.entity) => {
                    ),
                  (),
                )}
-               onClick={_ => {setKeyframeIndex(_ => index)}}>
+               onClick={_ => {setKeyframeIndex(_ => index)}}
+              >
                {switch (keyframe.valueRange) {
                 | Float((from, to_)) =>
                   <>

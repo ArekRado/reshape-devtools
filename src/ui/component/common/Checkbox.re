@@ -5,19 +5,22 @@ let make =
       ~onChange,
       ~disabled: option(bool)=?,
       ~label: option(React.element)=?,
-      ~className="",
+      ~containerClassName="",
+      ~labelClassName="",
+      ~inputClassName="",
+      ~id="",
     ) => {
-  <label>
-
+    <div className={containerClassName}>
       {switch (label) {
-       | Some(label) => label
-       | None => React.null
+      | Some(label) => <label htmlFor={id} className={labelClassName}>{label}</label>
+      | None => React.null
        }}
       <input
-        className={className ++ " text-black w-full"}
+        className={"text-black w-full focus:outline-lightblue " ++ inputClassName}
         type_="checkbox"
         checked={value}
         onChange
+        id
         disabled={
           switch (disabled) {
             | Some(disabled) => disabled
@@ -25,5 +28,5 @@ let make =
             }
         }
       />
-    </label>;
+    </div>;
 };

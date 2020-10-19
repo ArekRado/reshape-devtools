@@ -6,27 +6,44 @@ let make =
       ~onChange,
       ~disabled: option(bool)=?,
       ~label: option(React.element)=?,
-      ~className="",
+      ~max: option(string)=?,
+      ~min: option(string)=?,
+      ~containerClassName="",
+      ~labelClassName="",
+      ~inputClassName="",
+      ~id="",
     ) => {
-  <label>
-
+    <div className={containerClassName}>
       {switch (label) {
-       | Some(label) => label
-       | None => React.null
-       }}
+      | Some(label) => <label htmlFor={id} className={labelClassName}>{label}</label>
+      | None => React.null
+      }}
       <input
-        className={className ++ " text-black w-full"}
+        className={"text-black w-full focus:outline-lightblue " ++ inputClassName}
         type_
         value
         onChange
+        id
         disabled={
           switch (disabled) {
             | Some(disabled) => disabled
             | None => false
             }
         }
+        max={
+          switch (max) {
+            | Some(max) => max;
+            | None => ""
+            }
+        }
+        min={
+          switch (min) {
+            | Some(min) => min;
+            | None => ""
+            }
+        }
       />
-    </label>;
+    </div>;
     // className={btnSize ++ " border border-gray-600 bg-gray-800 hover:bg-gray-700"}
     // onClick={onClick}
 };
